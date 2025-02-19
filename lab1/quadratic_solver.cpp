@@ -22,7 +22,7 @@ using std::endl;
  */
 
 double getDiscriminant(double const a, double const b, double const c) {
-    return b * b - 4 * a * c;
+    return b * b - 4.0 * a * c;
 }
 
 /**
@@ -59,8 +59,8 @@ void solveQuadraticEquation(double const a, double const b, double const c, doub
             *x2 = NAN;
         }
         else {
-            *x1 = (-b + sqrt(discriminant)) / (2 * a);
-            *x2 = (-b - sqrt(discriminant)) / (2 * a);
+            *x1 = (-b + sqrt(discriminant)) / (2.0 * a);
+            *x2 = (-b - sqrt(discriminant)) / (2.0 * a);
         }
     }
 }
