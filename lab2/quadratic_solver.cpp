@@ -1,9 +1,11 @@
 #include <iostream>
 #include "quadratic_solver.hpp"
 #include <math.h>
+#include <vector>
 
 using std::cout;
 using std::endl;
+using std::vector;
 
 /**
  * @brief Вычисляет дискриминант квадратного уравнения.
@@ -32,27 +34,24 @@ double getDiscriminant(double const a, double const b, double const c) {
  * @note В случае одного корня x1 и x2 получают одинаковое значение.
  */
 
-void solveQuadraticEquation(double const a, double const b, double const c, double *x1, double *x2) {
+void solveQuadraticEquation(double const a, double const b, double const c, vector<double>* roots) {
     if (a == 0) {
         if (b == 0) {
-            if (c == 0) cout << "Infinitive solutions" << endl;
-            else cout << "No solutions" << endl;
-            *x1 = NAN;
-            *x2 = NAN;
+            roots->push_back(NAN);
+            roots->push_back(NAN);
         } else {
-            *x1 = -c / b;
-            *x2 = *x1;
+            roots->push_back(-c / b);
+            roots->push_back(-c / b);
         }
     } else {
         double const discriminant = getDiscriminant(a, b, c);
         if (discriminant < 0) {
-            cout << "No real solutions" << endl;
-            *x1 = NAN;
-            *x2 = NAN;
+            roots->push_back(NAN);
+            roots->push_back(NAN);
         }
         else {
-            *x1 = (-b + sqrt(discriminant)) / (2.0 * a);
-            *x2 = (-b - sqrt(discriminant)) / (2.0 * a);
+            roots->push_back((-b + sqrt(discriminant)) / (2.0 * a));
+            roots->push_back((-b - sqrt(discriminant)) / (2.0 * a));
         }
     }
 }

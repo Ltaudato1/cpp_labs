@@ -1,3 +1,3 @@
 #pragma once
 
-void getEquation(double *a, double *b, double *c);
+bool getEquation(double *a, double *b, double *c, std::string& const input);

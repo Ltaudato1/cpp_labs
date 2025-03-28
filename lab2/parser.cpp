@@ -2,11 +2,6 @@
 #include <sstream>
 #include <string>
 
-using std::cin;
-using std::cout;
-using std::getline;
-using std::string;
-using std::stringstream;
 
 /**
  * @brief Функция запрашивает у пользователя коэффициенты a, b и c для квадратного уравнения.
@@ -19,25 +14,17 @@ using std::stringstream;
  * @note Если ввод некорректен, пользователь будет запрашиваться повторно.
  */
 
-void getEquation(double *a, double *b, double *c) {
-    string input;
+bool getEquation(double *a, double *b, double *c, std::string& const input) {
     double tempA, tempB, tempC;
 
-    while (true) {
-        cout << "Введите коэффициенты a, b, c через пробел: ";
-        getline(cin, input);
-
-        stringstream ss(input);
-        if (ss >> tempA >> tempB >> tempC) {
-            if (ss.eof()) {
-                *a = tempA;
-                *b = tempB;
-                *c = tempC;
-                return;
-            }
-        }
-
-        cout << "Ошибка ввода! Убедитесь, что ввели три числа через пробел.\n";
-        cin.clear();
+    std::stringstream ss(input);
+    if (ss >> tempA >> tempB >> tempC && ss.eof()) {
+        *a = tempA;
+        *b = tempB;
+        *c = tempC;
+        return true;
+    } else {
+        std::cerr << "Invalid format for string" << std::endl;
+        return false;
     }
 }
