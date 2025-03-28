@@ -13,10 +13,22 @@ struct Answer {
 using std::vector;
 using std::string;
 
+/**
+ * @brief Класс для загрузки уравнений из файла.
+ */
 class Exam {
-    private:
-        vector<QuadraticEquation> tasks;
-    public:
-        Exam(string& filename);
-        const vector<QuadraticEquation>& getTasks() { return tasks; }
+private:
+    vector<QuadraticEquation> tasks; ///< Список уравнений
+public:
+    /**
+     * @brief Конструктор, загружающий уравнения из файла.
+     * @param filename Имя файла с уравнениями (формат: a b c на каждой строке).
+     */
+    Exam(std::string& filename);
+    
+    /**
+     * @brief Возвращает список уравнений.
+     * @return Константная ссылка на вектор QuadraticEquation.
+     */
+    const vector<QuadraticEquation>& getTasks() { return tasks; }
 };

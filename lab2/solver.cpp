@@ -18,12 +18,13 @@ double getDiscriminant(double const a, double const b, double const c) {
 }
 
 /**
- * @brief Решает квадратное уравнение ax^2 + bx + c = 0.
- * 
- * @param equation Структура, хранящая коэффициенты уравнения
- * 
- * @return Структура, хранящая найденные корни и тип ответа (1 корень, нет корней, бесконечное множество корней, 2 корня)
- * 
+ * @brief Решает квадратное уравнение и возвращает корни.
+ * @param equation Уравнение для решения.
+ * @return Структура Roots:
+ * - При D < 0: roots = {NaN, NaN}, answerType = NO_ROOTS.
+ * - При D = 0: roots = {x, x}, answerType = ONE_ROOT.
+ * - При D > 0: roots = {x1, x2}, answerType = TWO_ROOTS.
+ * - Если a = 0 и b = 0: проверяется c (INFINITE_ROOTS или NO_ROOTS).
  */
 
 Roots solveQuadraticEquation(QuadraticEquation& equation) {
