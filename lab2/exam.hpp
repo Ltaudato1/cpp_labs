@@ -9,7 +9,7 @@ using std::pair;
 
 using Answer = struct {
     QuadraticEquation equation;
-    Roots roots;
+    Roots ans;
 };
 
 using std::vector;
