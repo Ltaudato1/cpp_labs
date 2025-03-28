@@ -14,7 +14,7 @@
  * @note Если ввод некорректен, пользователь будет запрашиваться повторно.
  */
 
-bool getEquation(double *a, double *b, double *c, std::string& const input) {
+bool getEquation(double *a, double *b, double *c, std::string& input) {
     double tempA, tempB, tempC;
 
     std::stringstream ss(input);

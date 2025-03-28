@@ -3,11 +3,9 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include "quadratic_solver.hpp"
+#include "solver.hpp"
 
-using std::pair;
-
-using Answer = struct {
+struct Answer {
     QuadraticEquation equation;
     Roots ans;
 };
@@ -19,6 +17,6 @@ class Exam {
     private:
         vector<QuadraticEquation> tasks;
     public:
-        Exam(string& const filename);
+        Exam(string& filename);
         const vector<QuadraticEquation>& getTasks() { return tasks; }
 };

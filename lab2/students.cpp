@@ -1,9 +1,10 @@
 #include <iostream>
 #include <vector>
 #include "students.hpp"
+#include "solver.hpp"
 #include <cstdlib>
 
-Email& Student::passExam(Exam& const exam) {
+Email Student::passExam(Exam& exam) {
     vector<QuadraticEquation> tasks = exam.getTasks();
 
     int chanceForRightAnswer = 0;
@@ -24,7 +25,8 @@ Email& Student::passExam(Exam& const exam) {
     for (auto task: tasks) {
         int chance = rand() % 100;
         if (chance < chanceForRightAnswer) {
-            answer.push_back({task, solveQuadraticEquation(task)});
+            Roots roots = solveQuadraticEquation(task);
+            answer.push_back({task, roots});
         } else {
             vector<double> roots = {0, 0};
             answer.push_back({task, {roots, ONE_ROOT}});
@@ -34,5 +36,4 @@ Email& Student::passExam(Exam& const exam) {
     Email email = Email(answer, this->name);
 
     return email;
-
 }

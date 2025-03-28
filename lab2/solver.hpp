@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 enum AnswerType {
     INFINITE_ROOTS,
     TWO_ROOTS,
@@ -7,15 +9,15 @@ enum AnswerType {
     NO_ROOTS
 };
 
-using Roots = struct {
-    vector<double> roots;
+struct Roots {
+    std::vector<double> roots;
     AnswerType answerType;
 };
 
-using QuadraticEquation = struct {
+struct QuadraticEquation {
     double a;
     double b;
     double c;
 };
 
-Roots& solveQuadraticEquation(QuadraticEquation& const equation);
+Roots solveQuadraticEquation(QuadraticEquation& equation);

@@ -19,7 +19,7 @@ class Student {
         string name;
         StudentType type;
     public:
-        Student(string& const name, StudentType const type): name(name), type(type) {}
+        Student(string& name, StudentType type): name(name), type(type) {}
 
-        Email& passExam(Exam& const exam);
+        Email passExam(Exam& exam);
 };

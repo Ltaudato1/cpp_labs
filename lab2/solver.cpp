@@ -1,10 +1,8 @@
 #include <iostream>
-#include "quadratic_solver.hpp"
 #include <math.h>
 #include <vector>
+#include "solver.hpp"
 
-using std::cout;
-using std::endl;
 using std::vector;
 
 /**
@@ -28,7 +26,7 @@ double getDiscriminant(double const a, double const b, double const c) {
  * 
  */
 
-Roots& solveQuadraticEquation(QuadraticEquation& const equation) {
+Roots solveQuadraticEquation(QuadraticEquation& equation) {
     Roots answer;
 
     double const a = equation.a;
@@ -38,24 +36,24 @@ Roots& solveQuadraticEquation(QuadraticEquation& const equation) {
         if (b == 0) {
             if (c == 0) answer.answerType = INFINITE_ROOTS;
             else answer.answerType = NO_ROOTS;
-            answer.roots->push_back(NAN);
-            answer.roots->push_back(NAN);
+            answer.roots.push_back(NAN);
+            answer.roots.push_back(NAN);
         } else {
             answer.answerType = ONE_ROOT;
-            answer.roots->push_back(-c / b);
-            answer.roots->push_back(-c / b);
+            answer.roots.push_back(-c / b);
+            answer.roots.push_back(-c / b);
         }
     } else {
         double const discriminant = getDiscriminant(a, b, c);
         if (discriminant < 0) {
             answer.answerType = NO_ROOTS;
-            answer.roots->push_back(NAN);
-            answer.roots->push_back(NAN);
+            answer.roots.push_back(NAN);
+            answer.roots.push_back(NAN);
         }
         else {
             answer.answerType = TWO_ROOTS;
-            answer.roots->push_back((-b + sqrt(discriminant)) / (2.0 * a));
-            answer.roots->push_back((-b - sqrt(discriminant)) / (2.0 * a));
+            answer.roots.push_back((-b + sqrt(discriminant)) / (2.0 * a));
+            answer.roots.push_back((-b - sqrt(discriminant)) / (2.0 * a));
         }
     }
 

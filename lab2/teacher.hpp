@@ -3,7 +3,7 @@
 #include <queue>
 #include <map>
 #include "email.hpp"
-#include "quadratic_solver.hpp"
+#include "solver.hpp"
 
 using std::queue;
 using std::map;
@@ -14,8 +14,8 @@ class Teacher {
         map<string, int> results;
         string name;
     public:
-        Teacher(string& const name): name(name) {}
-        void receiveEmail(Email& const email) { solutions.push(email); }
+        Teacher(string& name): name(name) {}
+        void receiveEmail(Email& email) { solutions.push(email); }
         map<string, int>& getResults() { return results; }
         void checkEmails();
 };

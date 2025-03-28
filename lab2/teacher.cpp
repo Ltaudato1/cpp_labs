@@ -1,5 +1,6 @@
 #include <iostream>
 #include "teacher.hpp"
+#include "solver.hpp"
 
 void Teacher::checkEmails() {
     while (!solutions.empty()) {
@@ -13,7 +14,10 @@ void Teacher::checkEmails() {
 
         for (auto solution: solutions) {
             auto rightAnswer = solveQuadraticEquation(solution.equation);
-            results[author] += ((solution.ans.roots == rightAnswer.roots) && (solution.ans.answerType == solution.ans.answerType));
+            if ((solution.ans.roots == rightAnswer.roots || rightAnswer.answerType == NO_ROOTS || rightAnswer.answerType == INFINITE_ROOTS)
+             && solution.ans.answerType == rightAnswer.answerType) {
+                results[author]++;
+            }
         }
     }
 }

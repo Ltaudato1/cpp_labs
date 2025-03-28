@@ -11,7 +11,7 @@ using std::cerr;
 using std::endl;
 
 
-Exam::Exam(string& const filename) {
+Exam::Exam(string& filename) {
     ifstream infile(filename);
     if (!infile) {
         cerr << "Cannot open file " << filename << endl;

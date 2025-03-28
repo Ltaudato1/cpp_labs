@@ -7,7 +7,7 @@ class Email {
         vector<Answer> completedTasks;
         string author;
     public:
-        Email(vector<Answer>& const completedTasks, string& const author): completedTasks(completedTasks), author(author) {}
+        Email(vector<Answer>& completedTasks, string& author): completedTasks(completedTasks), author(author) {}
         string& getAuthor() { return author; }
         vector<Answer>& getCompletedTasks() { return completedTasks; }
 };
