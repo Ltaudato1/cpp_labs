@@ -22,36 +22,42 @@ double getDiscriminant(double const a, double const b, double const c) {
 /**
  * @brief Решает квадратное уравнение ax^2 + bx + c = 0.
  * 
- * @param a Коэффициент перед x^2.
- * @param b Коэффициент перед x.
- * @param c Свободный член.
- * @param x1 Указатель для записи первого корня (или единственного решения).
- * @param x2 Указатель для записи второго корня (или совпадающего с x1 при одном решении).
+ * @param equation Структура, хранящая коэффициенты уравнения
  * 
- * @note Если уравнение имеет бесконечно много решений (0 = 0), выводится соответствующее сообщение.
- * @note Если решений нет, выводится сообщение "No solutions", а x1 и x2 присваивается значение NaN (Not a Number).
- * @note Если решений в поле вещественных чисел нет, выводится сообщение "No real solutions", а x1 и x2 присваивается значение NaN (Not a Number)
- * @note В случае одного корня x1 и x2 получают одинаковое значение.
+ * @return Структура, хранящая найденные корни и тип ответа (1 корень, нет корней, бесконечное множество корней, 2 корня)
+ * 
  */
 
-void solveQuadraticEquation(double const a, double const b, double const c, vector<double>* roots) {
+Roots& solveQuadraticEquation(QuadraticEquation& const equation) {
+    Roots answer;
+
+    double const a = equation.a;
+    double const b = equation.b;
+    double const c = equation.c;
     if (a == 0) {
         if (b == 0) {
-            roots->push_back(NAN);
-            roots->push_back(NAN);
+            if (c == 0) answer.answerType = INFINITE_ROOTS;
+            else answer.answerType = NO_ROOTS;
+            answer.roots->push_back(NAN);
+            answer.roots->push_back(NAN);
         } else {
-            roots->push_back(-c / b);
-            roots->push_back(-c / b);
+            answer.answerType = ONE_ROOT;
+            answer.roots->push_back(-c / b);
+            answer.roots->push_back(-c / b);
         }
     } else {
         double const discriminant = getDiscriminant(a, b, c);
         if (discriminant < 0) {
-            roots->push_back(NAN);
-            roots->push_back(NAN);
+            answer.answerType = NO_ROOTS;
+            answer.roots->push_back(NAN);
+            answer.roots->push_back(NAN);
         }
         else {
-            roots->push_back((-b + sqrt(discriminant)) / (2.0 * a));
-            roots->push_back((-b - sqrt(discriminant)) / (2.0 * a));
+            answer.answerType = TWO_ROOTS;
+            answer.roots->push_back((-b + sqrt(discriminant)) / (2.0 * a));
+            answer.roots->push_back((-b - sqrt(discriminant)) / (2.0 * a));
         }
     }
+
+    return answer;
 }
