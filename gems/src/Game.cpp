@@ -7,6 +7,12 @@ Game::Game() : window(sf::VideoMode(
         static_cast<unsigned int>(Grid::GRID_HEIGHT * Gem::TOTAL_SIZE + Gem::PADDING)
     ), "Gems Game"),
     isFirstGemSelected(false), score(0), running(true) {
+    // Устанавливаем вид окна
+    sf::View view(sf::FloatRect(0, 0, 
+        Grid::GRID_WIDTH * Gem::TOTAL_SIZE + Gem::PADDING,
+        Grid::GRID_HEIGHT * Gem::TOTAL_SIZE + Gem::PADDING));
+    window.setView(view);
+    
     grid = std::make_unique<Grid>(Grid::GRID_WIDTH, Grid::GRID_HEIGHT);
 }
 
@@ -17,7 +23,6 @@ void Game::run() {
         processEvents();
         update(deltaTime);
         render();
-        // Cap to ~60 FPS
         sf::sleep(sf::milliseconds(16) - sf::milliseconds(deltaTime * 1000));
     }
 }
@@ -30,12 +35,25 @@ void Game::processEvents() {
             window.close();
         } else if (event.type == sf::Event::MouseButtonPressed) {
             if (event.mouseButton.button == sf::Mouse::Left) {
-                sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
-                // Учитываем отступы при вычислении позиции в сетке
+                // Получаем размеры окна и вида
+                sf::Vector2f windowSize = sf::Vector2f(window.getSize());
+                sf::Vector2f viewSize = sf::Vector2f(window.getView().getSize());
+                
+                // Вычисляем масштаб
+                float scaleX = windowSize.x / viewSize.x;
+                float scaleY = windowSize.y / viewSize.y;
+                
+                // Преобразуем координаты мыши с учетом масштаба
+                sf::Vector2i mousePos(
+                    static_cast<int>(event.mouseButton.x / scaleX),
+                    static_cast<int>(event.mouseButton.y / scaleY)
+                );
+                
                 sf::Vector2i gridPos(
                     (mousePos.x - static_cast<int>(Gem::PADDING)) / static_cast<int>(Gem::TOTAL_SIZE),
                     (mousePos.y - static_cast<int>(Gem::PADDING)) / static_cast<int>(Gem::TOTAL_SIZE)
                 );
+                
                 std::cout << "Mouse click at: " << mousePos.x << ", " << mousePos.y 
                          << " -> Grid pos: " << gridPos.x << ", " << gridPos.y << std::endl;
                 handleMouseClick(gridPos);
@@ -45,7 +63,6 @@ void Game::processEvents() {
 }
 
 void Game::update(float deltaTime) {
-    // Обновляем анимации всех гемов
     for (int x = 0; x < Grid::GRID_WIDTH; ++x) {
         for (int y = 0; y < Grid::GRID_HEIGHT; ++y) {
             if (auto* gem = grid->getGemAt(sf::Vector2i(x, y))) {
@@ -54,7 +71,6 @@ void Game::update(float deltaTime) {
         }
     }
 
-    // Проверяем совпадения только если нет активных анимаций
     bool hasAnimations = false;
     for (int x = 0; x < Grid::GRID_WIDTH && !hasAnimations; ++x) {
         for (int y = 0; y < Grid::GRID_HEIGHT && !hasAnimations; ++y) {
@@ -85,7 +101,6 @@ void Game::handleMouseClick(const sf::Vector2i& position) {
         return;
     }
 
-    // Проверяем, нет ли активных анимаций
     bool hasAnimations = false;
     for (int x = 0; x < Grid::GRID_WIDTH && !hasAnimations; ++x) {
         for (int y = 0; y < Grid::GRID_HEIGHT && !hasAnimations; ++y) {
@@ -97,7 +112,7 @@ void Game::handleMouseClick(const sf::Vector2i& position) {
         }
     }
 
-    if (hasAnimations) return;  // Игнорируем клики во время анимаций
+    if (hasAnimations) return;
 
     if (!isFirstGemSelected) {
         firstGemPosition = position;
