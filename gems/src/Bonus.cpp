@@ -4,12 +4,13 @@
 
 ColorChangeBonus::ColorChangeBonus(GemType originalType) 
     : originalType(originalType) {
-    shape.setRadius(10.f);
+    shape.setRadius(8.f);
     shape.setFillColor(sf::Color::Cyan);
+    shape.setOutlineThickness(2.f);
+    shape.setOutlineColor(sf::Color::White);
 }
 
 void ColorChangeBonus::activate(Gem& target, Grid& grid) {
-    // Find 2 random non-adjacent gems within 3 cells radius
     std::vector<sf::Vector2i> candidates;
     sf::Vector2i targetPos = grid.getGemPosition(&target);
     
@@ -41,8 +42,10 @@ void ColorChangeBonus::draw(sf::RenderTarget& target, sf::RenderStates states) c
 }
 
 BombBonus::BombBonus() {
-    shape.setRadius(10.f);
+    shape.setRadius(8.f);
     shape.setFillColor(sf::Color::Red);
+    shape.setOutlineThickness(2.f);
+    shape.setOutlineColor(sf::Color::White);
 }
 
 void BombBonus::activate(Gem& target, Grid& grid) {
@@ -53,7 +56,6 @@ void BombBonus::activate(Gem& target, Grid& grid) {
         }
     }
     
-    // Destroy 5 random gems
     std::random_device rd;
     std::mt19937 gen(rd());
     std::shuffle(allPositions.begin(), allPositions.end(), gen);

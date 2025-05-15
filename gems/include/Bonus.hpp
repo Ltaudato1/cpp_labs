@@ -18,6 +18,7 @@ public:
     ColorChangeBonus(GemType originalType);
     void activate(Gem& target, Grid& grid) override;
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+    sf::CircleShape& getShape() { return shape; }
 
 private:
     GemType originalType;
@@ -29,6 +30,7 @@ public:
     BombBonus();
     void activate(Gem& target, Grid& grid) override;
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+    sf::CircleShape& getShape() { return shape; }
 
 private:
     sf::CircleShape shape;

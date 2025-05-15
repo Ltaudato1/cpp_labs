@@ -7,13 +7,23 @@ Gem::Gem(GemType type, const sf::Vector2f& position)
     shape.setPosition(position);
     updateColor();
     initializeBonus();
-    startAppearing();  // Начинаем с анимации появления
+    startAppearing();
 }
 
 void Gem::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     target.draw(shape, states);
     if (bonus) {
-        bonus->draw(target, states);
+        // Позиционируем бонус в центре гема
+        sf::Vector2f gemCenter = shape.getPosition() + sf::Vector2f(SIZE/2, SIZE/2);
+        if (auto* colorBonus = dynamic_cast<ColorChangeBonus*>(bonus.get())) {
+            sf::CircleShape& bonusShape = const_cast<sf::CircleShape&>(colorBonus->getShape());
+            bonusShape.setPosition(gemCenter - sf::Vector2f(bonusShape.getRadius(), bonusShape.getRadius()));
+            target.draw(bonusShape, states);
+        } else if (auto* bombBonus = dynamic_cast<BombBonus*>(bonus.get())) {
+            sf::CircleShape& bonusShape = const_cast<sf::CircleShape&>(bombBonus->getShape());
+            bonusShape.setPosition(gemCenter - sf::Vector2f(bonusShape.getRadius(), bonusShape.getRadius()));
+            target.draw(bonusShape, states);
+        }
     }
 }
 
@@ -142,7 +152,8 @@ void Gem::initializeBonus() {
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0.0, 1.0);
     
-    if (dis(gen) < BONUS_CHANCE) {
+    // Увеличим шанс появления бонуса для лучшей видимости
+    if (dis(gen) < BONUS_CHANCE * 2) {  // Удвоим шанс для тестирования
         if (dis(gen) < 0.5) {
             bonus = std::make_unique<ColorChangeBonus>(type);
         } else {
