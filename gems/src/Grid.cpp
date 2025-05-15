@@ -1,82 +1,134 @@
 #include "Grid.hpp"
 #include <random>
 
+// Генератор случайных чисел
+static std::random_device rd;
+static std::mt19937 gen(rd());
+
+/**
+ * @brief Конструктор игрового поля
+ * @param width Ширина поля
+ * @param height Высота поля
+ */
 Grid::Grid(int width, int height) : width(width), height(height) {
-    gems.resize(width);
-    for (int x = 0; x < width; ++x) {
-        gems[x].resize(height);
+    // Создаем сетку гемов
+    gems.resize(height, std::vector<std::unique_ptr<Gem>>(width));
+    
+    // Заполняем поле случайными гемами
+    std::uniform_int_distribution<> typeDist(0, 4);
+    for (int row = 0; row < height; ++row) {
+        for (int col = 0; col < width; ++col) {
+            gems[row][col] = std::make_unique<Gem>(
+                static_cast<GemType>(typeDist(gen)),
+                sf::Vector2i(col, row),
+                this
+            );
+        }
     }
-    fillEmptySpaces();
 }
 
+/**
+ * @brief Отрисовывает игровое поле
+ * @param window Окно для отрисовки
+ */
 void Grid::draw(sf::RenderWindow& window) {
-    for (int x = 0; x < width; ++x) {
-        for (int y = 0; y < height; ++y) {
-            if (gems[x][y]) {
-                window.draw(*gems[x][y]);
+    for (const auto& row : gems) {
+        for (const auto& gem : row) {
+            if (gem) {
+                gem->draw(window);
             }
         }
     }
 }
 
+/**
+ * @brief Меняет местами два гема
+ * @param pos1 Позиция первого гема
+ * @param pos2 Позиция второго гема
+ */
 void Grid::swapGems(const sf::Vector2i& pos1, const sf::Vector2i& pos2) {
     if (!isValidPosition(pos1) || !isValidPosition(pos2)) return;
-    std::swap(gems[pos1.x][pos1.y], gems[pos2.x][pos2.y]);
     
-    if (gems[pos1.x][pos1.y]) {
-        sf::Vector2f newPos(
-            pos1.x * Gem::TOTAL_SIZE + Gem::PADDING,
-            pos1.y * Gem::TOTAL_SIZE + Gem::PADDING
-        );
-        gems[pos1.x][pos1.y]->startFalling(newPos);
-    }
-    if (gems[pos2.x][pos2.y]) {
-        sf::Vector2f newPos(
-            pos2.x * Gem::TOTAL_SIZE + Gem::PADDING,
-            pos2.y * Gem::TOTAL_SIZE + Gem::PADDING
-        );
-        gems[pos2.x][pos2.y]->startFalling(newPos);
-    }
+    Gem* gem1 = getGemAt(pos1);
+    Gem* gem2 = getGemAt(pos2);
+    
+    if (!gem1 || !gem2) return;
+    
+    // Меняем местами гемы в сетке
+    std::swap(gems[pos1.y][pos1.x], gems[pos2.y][pos2.x]);
+    
+    // Обновляем позиции гемов
+    gem1->setPosition(pos2);
+    gem2->setPosition(pos1);
+    
+    // Запускаем анимацию падения
+    gem1->startFalling();
+    gem2->startFalling();
 }
 
+/**
+ * @brief Проверяет наличие совпадений на поле
+ * @return true если найдены совпадения, false иначе
+ */
 bool Grid::checkMatches() {
-    bool foundMatches = false;
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            if (checkHorizontalMatches(y, x) || checkVerticalMatches(y, x)) {
-                foundMatches = true;
+    bool hasMatches = false;
+    
+    // Проверяем горизонтальные совпадения
+    for (int row = 0; row < height; ++row) {
+        for (int col = 0; col < width - 2; ++col) {
+            if (checkHorizontalMatches(row, col)) {
+                hasMatches = true;
             }
         }
     }
-    return foundMatches;
+    
+    // Проверяем вертикальные совпадения
+    for (int row = 0; row < height - 2; ++row) {
+        for (int col = 0; col < width; ++col) {
+            if (checkVerticalMatches(row, col)) {
+                hasMatches = true;
+            }
+        }
+    }
+    
+    return hasMatches;
 }
 
+/**
+ * @brief Удаляет все найденные совпадения
+ */
 void Grid::removeMatches() {
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            removeHorizontalMatches(y, x);
-            removeVerticalMatches(y, x);
+    // Удаляем горизонтальные совпадения
+    for (int row = 0; row < height; ++row) {
+        for (int col = 0; col < width - 2; ++col) {
+            removeHorizontalMatches(row, col);
+        }
+    }
+    
+    // Удаляем вертикальные совпадения
+    for (int row = 0; row < height - 2; ++row) {
+        for (int col = 0; col < width; ++col) {
+            removeVerticalMatches(row, col);
         }
     }
 }
 
+/**
+ * @brief Обрабатывает падение гемов
+ */
 void Grid::dropGems() {
-    for (int x = 0; x < width; ++x) {
-        for (int y = height - 1; y >= 0; --y) {
-            if (!gems[x][y]) {
-                int sourceY = y - 1;
-                while (sourceY >= 0 && !gems[x][sourceY]) {
-                    --sourceY;
-                }
-                
-                if (sourceY >= 0) {
-                    gems[x][y] = std::move(gems[x][sourceY]);
-                    if (gems[x][y]) {
-                        sf::Vector2f newPos(
-                            x * Gem::TOTAL_SIZE + Gem::PADDING,
-                            y * Gem::TOTAL_SIZE + Gem::PADDING
-                        );
-                        gems[x][y]->startFalling(newPos);
+    for (int col = 0; col < width; ++col) {
+        // Начинаем с нижней строки
+        for (int row = height - 1; row >= 0; --row) {
+            if (!gems[row][col]) {
+                // Ищем ближайший гем сверху
+                for (int above = row - 1; above >= 0; --above) {
+                    if (gems[above][col]) {
+                        // Перемещаем гем вниз
+                        gems[row][col] = std::move(gems[above][col]);
+                        gems[row][col]->setPosition(sf::Vector2i(col, row));
+                        gems[row][col]->startFalling();
+                        break;
                     }
                 }
             }
@@ -84,6 +136,31 @@ void Grid::dropGems() {
     }
 }
 
+/**
+ * @brief Заполняет пустые места новыми гемами
+ */
+void Grid::fillEmptySpaces() {
+    std::uniform_int_distribution<> typeDist(0, 4);
+    
+    for (int col = 0; col < width; ++col) {
+        for (int row = 0; row < height; ++row) {
+            if (!gems[row][col]) {
+                gems[row][col] = std::make_unique<Gem>(
+                    static_cast<GemType>(typeDist(gen)),
+                    sf::Vector2i(col, row),
+                    this
+                );
+            }
+        }
+    }
+}
+
+/**
+ * @brief Проверяет, являются ли две позиции соседними
+ * @param pos1 Первая позиция
+ * @param pos2 Вторая позиция
+ * @return true если позиции соседние, false иначе
+ */
 bool Grid::isAdjacent(const sf::Vector2i& pos1, const sf::Vector2i& pos2) const {
     if (!isValidPosition(pos1) || !isValidPosition(pos2)) return false;
     
@@ -93,149 +170,137 @@ bool Grid::isAdjacent(const sf::Vector2i& pos1, const sf::Vector2i& pos2) const 
     return (dx == 1 && dy == 0) || (dx == 0 && dy == 1);
 }
 
+/**
+ * @brief Получает гем по позиции
+ * @param position Позиция гема
+ * @return Указатель на гем или nullptr, если позиция пуста
+ */
 Gem* Grid::getGemAt(const sf::Vector2i& position) {
     if (!isValidPosition(position)) return nullptr;
-    return gems[position.x][position.y].get();
+    return gems[position.y][position.x].get();
 }
 
+/**
+ * @brief Удаляет гем с заданной позиции
+ * @param position Позиция гема
+ */
 void Grid::removeGem(const sf::Vector2i& position) {
-    if (isValidPosition(position)) {
-        gems[position.x][position.y].reset();
+    if (!isValidPosition(position)) return;
+    
+    if (auto* gem = getGemAt(position)) {
+        gem->startDisappearing();
+        gems[position.y][position.x].reset();
     }
 }
 
+/**
+ * @brief Получает позицию гема
+ * @param gem Указатель на гем
+ * @return Позиция гема или (-1, -1), если гем не найден
+ */
 sf::Vector2i Grid::getGemPosition(const Gem* gem) const {
-    for (int x = 0; x < width; ++x) {
-        for (int y = 0; y < height; ++y) {
-            if (gems[x][y].get() == gem) {
-                return sf::Vector2i(x, y);
+    for (int row = 0; row < height; ++row) {
+        for (int col = 0; col < width; ++col) {
+            if (gems[row][col].get() == gem) {
+                return sf::Vector2i(col, row);
             }
         }
     }
     return sf::Vector2i(-1, -1);
 }
 
+/**
+ * @brief Проверяет валидность позиции
+ * @param position Проверяемая позиция
+ * @return true если позиция валидна, false иначе
+ */
 bool Grid::isValidPosition(const sf::Vector2i& position) const {
     return position.x >= 0 && position.x < width &&
            position.y >= 0 && position.y < height;
 }
 
-void Grid::fillEmptySpaces() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, static_cast<int>(GemType::ORANGE));
-
-    for (int x = 0; x < width; ++x) {
-        for (int y = 0; y < height; ++y) {
-            if (!gems[x][y]) {
-                sf::Vector2f pos(
-                    x * Gem::TOTAL_SIZE + Gem::PADDING,
-                    y * Gem::TOTAL_SIZE + Gem::PADDING
-                );
-                gems[x][y] = std::make_unique<Gem>(static_cast<GemType>(dis(gen)), pos);
-            }
-        }
-    }
-}
-
+/**
+ * @brief Проверяет горизонтальные совпадения
+ * @param row Строка для проверки
+ * @param col Начальная колонка
+ * @return true если найдено совпадение, false иначе
+ */
 bool Grid::checkHorizontalMatches(int row, int col) {
-    if (col + 2 >= width) return false;
-    
-    Gem* gem1 = gems[col][row].get();
-    if (!gem1) return false;
-    
-    GemType type = gem1->getType();
-    int matchLength = 1;
-    
-    // Проверяем вправо
-    for (int i = col + 1; i < width; ++i) {
-        if (gems[i][row] && gems[i][row]->getType() == type) {
-            matchLength++;
-        } else {
-            break;
-        }
+    if (!isValidPosition(sf::Vector2i(col, row)) ||
+        !isValidPosition(sf::Vector2i(col + 2, row))) {
+        return false;
     }
     
-    return matchLength >= 3;
+    Gem* gem1 = getGemAt(sf::Vector2i(col, row));
+    Gem* gem2 = getGemAt(sf::Vector2i(col + 1, row));
+    Gem* gem3 = getGemAt(sf::Vector2i(col + 2, row));
+    
+    if (!gem1 || !gem2 || !gem3) return false;
+    
+    return gem1->getType() == gem2->getType() &&
+           gem2->getType() == gem3->getType();
 }
 
+/**
+ * @brief Проверяет вертикальные совпадения
+ * @param row Начальная строка
+ * @param col Колонка для проверки
+ * @return true если найдено совпадение, false иначе
+ */
 bool Grid::checkVerticalMatches(int row, int col) {
-    if (row + 2 >= height) return false;
-    
-    Gem* gem1 = gems[col][row].get();
-    if (!gem1) return false;
-    
-    GemType type = gem1->getType();
-    int matchLength = 1;
-    
-    // Проверяем вниз
-    for (int i = row + 1; i < height; ++i) {
-        if (gems[col][i] && gems[col][i]->getType() == type) {
-            matchLength++;
-        } else {
-            break;
-        }
+    if (!isValidPosition(sf::Vector2i(col, row)) ||
+        !isValidPosition(sf::Vector2i(col, row + 2))) {
+        return false;
     }
     
-    return matchLength >= 3;
+    Gem* gem1 = getGemAt(sf::Vector2i(col, row));
+    Gem* gem2 = getGemAt(sf::Vector2i(col, row + 1));
+    Gem* gem3 = getGemAt(sf::Vector2i(col, row + 2));
+    
+    if (!gem1 || !gem2 || !gem3) return false;
+    
+    return gem1->getType() == gem2->getType() &&
+           gem2->getType() == gem3->getType();
 }
 
+/**
+ * @brief Удаляет горизонтальные совпадения
+ * @param row Строка для проверки
+ * @param col Начальная колонка
+ */
 void Grid::removeHorizontalMatches(int row, int col) {
     if (!checkHorizontalMatches(row, col)) return;
     
-    Gem* gem1 = gems[col][row].get();
-    if (!gem1) return;
+    // Удаляем все совпадающие гемы в строке
+    int currentCol = col;
+    GemType matchType = getGemAt(sf::Vector2i(col, row))->getType();
     
-    GemType type = gem1->getType();
-    int matchLength = 1;
-    
-    // Находим длину последовательности
-    for (int i = col + 1; i < width; ++i) {
-        if (gems[i][row] && gems[i][row]->getType() == type) {
-            matchLength++;
-        } else {
-            break;
-        }
-    }
-    
-    // Удаляем все гемы в последовательности
-    for (int i = 0; i < matchLength; ++i) {
-        if (gems[col + i][row]) {
-            if (gems[col + i][row]->hasBonus()) {
-                gems[col + i][row]->activateBonus(*gems[col + i][row], *this);
-            }
-            gems[col + i][row]->startDisappearing();
-            gems[col + i][row].reset();
-        }
+    while (currentCol < width) {
+        Gem* gem = getGemAt(sf::Vector2i(currentCol, row));
+        if (!gem || gem->getType() != matchType) break;
+        
+        removeGem(sf::Vector2i(currentCol, row));
+        currentCol++;
     }
 }
 
+/**
+ * @brief Удаляет вертикальные совпадения
+ * @param row Начальная строка
+ * @param col Колонка для проверки
+ */
 void Grid::removeVerticalMatches(int row, int col) {
     if (!checkVerticalMatches(row, col)) return;
     
-    Gem* gem1 = gems[col][row].get();
-    if (!gem1) return;
+    // Удаляем все совпадающие гемы в колонке
+    int currentRow = row;
+    GemType matchType = getGemAt(sf::Vector2i(col, row))->getType();
     
-    GemType type = gem1->getType();
-    int matchLength = 1;
-    
-    // Находим длину последовательности
-    for (int i = row + 1; i < height; ++i) {
-        if (gems[col][i] && gems[col][i]->getType() == type) {
-            matchLength++;
-        } else {
-            break;
-        }
-    }
-    
-    // Удаляем все гемы в последовательности
-    for (int i = 0; i < matchLength; ++i) {
-        if (gems[col][row + i]) {
-            if (gems[col][row + i]->hasBonus()) {
-                gems[col][row + i]->activateBonus(*gems[col][row + i], *this);
-            }
-            gems[col][row + i]->startDisappearing();
-            gems[col][row + i].reset();
-        }
+    while (currentRow < height) {
+        Gem* gem = getGemAt(sf::Vector2i(col, currentRow));
+        if (!gem || gem->getType() != matchType) break;
+        
+        removeGem(sf::Vector2i(col, currentRow));
+        currentRow++;
     }
 } 

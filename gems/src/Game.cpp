@@ -2,6 +2,11 @@
 #include <iostream>
 #include <SFML/System/Clock.hpp>
 
+/**
+ * @brief Конструктор игры
+ * 
+ * Создает окно и инициализирует игровое поле.
+ */
 Game::Game() : window(sf::VideoMode(
         static_cast<unsigned int>(Grid::GRID_WIDTH * Gem::TOTAL_SIZE + Gem::PADDING),
         static_cast<unsigned int>(Grid::GRID_HEIGHT * Gem::TOTAL_SIZE + Gem::PADDING)
@@ -16,6 +21,12 @@ Game::Game() : window(sf::VideoMode(
     grid = std::make_unique<Grid>(Grid::GRID_WIDTH, Grid::GRID_HEIGHT);
 }
 
+/**
+ * @brief Запускает игровой цикл
+ * 
+ * Основной цикл игры, обрабатывающий события, обновляющий
+ * состояние и отрисовывающий кадр.
+ */
 void Game::run() {
     sf::Clock clock;
     while (window.isOpen() && running) {
@@ -27,6 +38,12 @@ void Game::run() {
     }
 }
 
+/**
+ * @brief Обрабатывает события окна
+ * 
+ * Обрабатывает события SFML, включая закрытие окна
+ * и клики мыши.
+ */
 void Game::processEvents() {
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -62,6 +79,12 @@ void Game::processEvents() {
     }
 }
 
+/**
+ * @brief Обновляет состояние игры
+ * @param deltaTime Время с последнего обновления
+ * 
+ * Обновляет состояние всех гемов и проверяет совпадения.
+ */
 void Game::update(float deltaTime) {
     for (int x = 0; x < Grid::GRID_WIDTH; ++x) {
         for (int y = 0; y < Grid::GRID_HEIGHT; ++y) {
@@ -89,12 +112,24 @@ void Game::update(float deltaTime) {
     }
 }
 
+/**
+ * @brief Отрисовывает текущий кадр
+ * 
+ * Очищает окно и отрисовывает все элементы игры.
+ */
 void Game::render() {
     window.clear(sf::Color::Black);
     grid->draw(window);
     window.display();
 }
 
+/**
+ * @brief Обрабатывает клик мыши
+ * @param position Позиция клика
+ * 
+ * Преобразует координаты клика в позицию на поле и
+ * обрабатывает выбор и перемещение гемов.
+ */
 void Game::handleMouseClick(const sf::Vector2i& position) {
     if (!grid->isValidPosition(position)) {
         std::cout << "Invalid position: " << position.x << ", " << position.y << std::endl;

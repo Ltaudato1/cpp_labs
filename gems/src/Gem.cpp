@@ -1,102 +1,71 @@
 #include "Gem.hpp"
+#include "Grid.hpp"
 #include <random>
 
-Gem::Gem(GemType type, const sf::Vector2f& position) 
-    : type(type) {
+// Генератор случайных чисел
+static std::random_device rd;
+static std::mt19937 gen(rd());
+
+/**
+ * @brief Конструктор гема
+ * @param type Тип гема
+ * @param position Позиция на поле
+ * @param grid Указатель на игровое поле
+ */
+Gem::Gem(GemType type, const sf::Vector2i& position, Grid* grid)
+    : type(type), position(position), grid(grid), state(GemState::APPEARING) {
     shape.setSize(sf::Vector2f(SIZE, SIZE));
-    shape.setPosition(position);
     updateColor();
-    initializeBonus();
     startAppearing();
+    initializeBonus();
 }
 
-void Gem::draw(sf::RenderTarget& target, sf::RenderStates states) const {
-    target.draw(shape, states);
-    if (bonus) {
-        // Позиционируем бонус в центре гема
-        sf::Vector2f gemCenter = shape.getPosition() + sf::Vector2f(SIZE/2, SIZE/2);
-        if (auto* colorBonus = dynamic_cast<ColorChangeBonus*>(bonus.get())) {
-            sf::CircleShape& bonusShape = const_cast<sf::CircleShape&>(colorBonus->getShape());
-            bonusShape.setPosition(gemCenter - sf::Vector2f(bonusShape.getRadius(), bonusShape.getRadius()));
-            target.draw(bonusShape, states);
-        } else if (auto* bombBonus = dynamic_cast<BombBonus*>(bonus.get())) {
-            sf::CircleShape& bonusShape = const_cast<sf::CircleShape&>(bombBonus->getShape());
-            bonusShape.setPosition(gemCenter - sf::Vector2f(bonusShape.getRadius(), bonusShape.getRadius()));
-            target.draw(bonusShape, states);
-        }
-    }
-}
-
-void Gem::setPosition(const sf::Vector2f& newPosition) {
-    shape.setPosition(newPosition);
-}
-
-void Gem::setType(GemType newType) {
-    type = newType;
-    updateColor();
-}
-
-GemType Gem::getType() const {
-    return type;
-}
-
-bool Gem::hasBonus() const {
-    return bonus != nullptr;
-}
-
-void Gem::setBonus(std::unique_ptr<Bonus> newBonus) {
-    bonus = std::move(newBonus);
-}
-
-void Gem::activateBonus(Gem& target, Grid& grid) {
-    if (bonus) {
-        bonus->activate(target, grid);
-    }
-}
-
+/**
+ * @brief Обновляет состояние гема
+ * @param deltaTime Время с последнего обновления
+ */
 void Gem::update(float deltaTime) {
     switch (state) {
         case GemState::FALLING: {
-            sf::Vector2f currentPos = shape.getPosition();
-            sf::Vector2f direction = targetPosition - currentPos;
-            float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+            animationTime += deltaTime;
+            float progress = std::min(animationTime / ANIMATION_TIME, 1.0f);
             
-            if (distance < FALL_SPEED * deltaTime) {
-                shape.setPosition(targetPosition);
+            // Обновляем позицию
+            sf::Vector2f currentPos = startPosition + (targetPosition - startPosition) * progress;
+            shape.setPosition(currentPos);
+            
+            if (progress >= 1.0f) {
                 state = GemState::IDLE;
-            } else {
-                direction /= distance;  // Нормализуем вектор
-                shape.move(direction * FALL_SPEED * deltaTime);
             }
             break;
         }
         case GemState::DISAPPEARING: {
             animationTime += deltaTime;
-            float progress = animationTime / DISAPPEAR_TIME;
-            if (progress >= 1.f) {
+            float progress = std::min(animationTime / ANIMATION_TIME, 1.0f);
+            
+            // Обновляем прозрачность
+            float currentAlpha = startAlpha + (targetAlpha - startAlpha) * progress;
+            sf::Color color = shape.getFillColor();
+            color.a = static_cast<sf::Uint8>(currentAlpha);
+            shape.setFillColor(color);
+            
+            if (progress >= 1.0f) {
                 state = GemState::IDLE;
-                sf::Color color = shape.getFillColor();
-                color.a = 0;
-                shape.setFillColor(color);
-            } else {
-                sf::Color color = shape.getFillColor();
-                color.a = static_cast<sf::Uint8>(startAlpha * (1.f - progress));
-                shape.setFillColor(color);
             }
             break;
         }
         case GemState::APPEARING: {
             animationTime += deltaTime;
-            float progress = animationTime / APPEAR_TIME;
-            if (progress >= 1.f) {
+            float progress = std::min(animationTime / ANIMATION_TIME, 1.0f);
+            
+            // Обновляем прозрачность
+            float currentAlpha = startAlpha + (targetAlpha - startAlpha) * progress;
+            sf::Color color = shape.getFillColor();
+            color.a = static_cast<sf::Uint8>(currentAlpha);
+            shape.setFillColor(color);
+            
+            if (progress >= 1.0f) {
                 state = GemState::IDLE;
-                sf::Color color = shape.getFillColor();
-                color.a = 255;
-                shape.setFillColor(color);
-            } else {
-                sf::Color color = shape.getFillColor();
-                color.a = static_cast<sf::Uint8>(255 * progress);
-                shape.setFillColor(color);
             }
             break;
         }
@@ -105,59 +74,136 @@ void Gem::update(float deltaTime) {
     }
 }
 
-void Gem::startFalling(const sf::Vector2f& targetPos) {
-    state = GemState::FALLING;
-    targetPosition = targetPos;
-}
-
-void Gem::startDisappearing() {
-    state = GemState::DISAPPEARING;
-    animationTime = 0.f;
-    startAlpha = shape.getFillColor().a;
-}
-
-void Gem::startAppearing() {
-    state = GemState::APPEARING;
-    animationTime = 0.f;
-    sf::Color color = shape.getFillColor();
-    color.a = 0;
-    shape.setFillColor(color);
-}
-
-void Gem::updateColor() {
-    switch (type) {
-        case GemType::RED:
-            shape.setFillColor(sf::Color(255, 0, 0, 255));
-            break;
-        case GemType::BLUE:
-            shape.setFillColor(sf::Color(0, 0, 255, 255));
-            break;
-        case GemType::GREEN:
-            shape.setFillColor(sf::Color(0, 255, 0, 255));
-            break;
-        case GemType::YELLOW:
-            shape.setFillColor(sf::Color(255, 255, 0, 255));
-            break;
-        case GemType::PURPLE:
-            shape.setFillColor(sf::Color(128, 0, 128, 255));
-            break;
-        case GemType::ORANGE:
-            shape.setFillColor(sf::Color(255, 165, 0, 255));
-            break;
+/**
+ * @brief Отрисовывает гем
+ * @param window Окно для отрисовки
+ */
+void Gem::draw(sf::RenderWindow& window) {
+    window.draw(shape);
+    
+    if (bonus) {
+        sf::Vector2f bonusPos = shape.getPosition();
+        bonusPos.x += SIZE / 2;
+        bonusPos.y += SIZE / 2;
+        bonus->draw(window, bonusPos);
     }
 }
 
+/**
+ * @brief Устанавливает тип гема
+ * @param newType Новый тип гема
+ */
+void Gem::setType(GemType newType) {
+    type = newType;
+    updateColor();
+}
+
+/**
+ * @brief Устанавливает позицию гема
+ * @param newPosition Новая позиция
+ */
+void Gem::setPosition(const sf::Vector2i& newPosition) {
+    position = newPosition;
+    shape.setPosition(
+        position.x * (SIZE + PADDING) + PADDING,
+        position.y * (SIZE + PADDING) + PADDING
+    );
+}
+
+/**
+ * @brief Активирует бонус гема
+ */
+void Gem::activateBonus() {
+    if (bonus) {
+        // Выбираем случайную позицию в радиусе 3
+        std::uniform_int_distribution<> dist(-3, 3);
+        int offsetX, offsetY;
+        do {
+            offsetX = dist(gen);
+            offsetY = dist(gen);
+        } while (offsetX == 0 && offsetY == 0);
+        
+        sf::Vector2i targetPos = position;
+        targetPos.x += offsetX;
+        targetPos.y += offsetY;
+        
+        if (grid->isValidPosition(targetPos)) {
+            if (auto* targetGem = grid->getGemAt(targetPos)) {
+                bonus->activate(*targetGem);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Запускает анимацию падения
+ */
+void Gem::startFalling() {
+    state = GemState::FALLING;
+    animationTime = 0.0f;
+    startPosition = shape.getPosition();
+    targetPosition = sf::Vector2f(
+        position.x * (SIZE + PADDING) + PADDING,
+        position.y * (SIZE + PADDING) + PADDING
+    );
+}
+
+/**
+ * @brief Запускает анимацию исчезновения
+ */
+void Gem::startDisappearing() {
+    state = GemState::DISAPPEARING;
+    animationTime = 0.0f;
+    startAlpha = 255.0f;
+    targetAlpha = 0.0f;
+}
+
+/**
+ * @brief Запускает анимацию появления
+ */
+void Gem::startAppearing() {
+    state = GemState::APPEARING;
+    animationTime = 0.0f;
+    startAlpha = 0.0f;
+    targetAlpha = 255.0f;
+}
+
+/**
+ * @brief Обновляет цвет гема
+ */
+void Gem::updateColor() {
+    sf::Color color;
+    switch (type) {
+        case GemType::RED:
+            color = sf::Color::Red;
+            break;
+        case GemType::BLUE:
+            color = sf::Color::Blue;
+            break;
+        case GemType::GREEN:
+            color = sf::Color::Green;
+            break;
+        case GemType::YELLOW:
+            color = sf::Color::Yellow;
+            break;
+        case GemType::PURPLE:
+            color = sf::Color(128, 0, 128);  // Purple
+            break;
+    }
+    shape.setFillColor(color);
+}
+
+/**
+ * @brief Инициализирует бонус
+ */
 void Gem::initializeBonus() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(0.0, 1.0);
-    
-    // Увеличим шанс появления бонуса для лучшей видимости
-    if (dis(gen) < BONUS_CHANCE * 2) {  // Удвоим шанс для тестирования
-        if (dis(gen) < 0.5) {
-            bonus = std::make_unique<ColorChangeBonus>(type);
+    std::uniform_real_distribution<> dist(0.0, 1.0);
+    if (dist(gen) < BONUS_CHANCE) {
+        std::uniform_int_distribution<> bonusDist(0, 1);
+        if (bonusDist(gen) == 0) {
+            bonus = std::make_unique<ColorChangeBonus>(grid);
         } else {
-            bonus = std::make_unique<BombBonus>();
+            bonus = std::make_unique<BombBonus>(grid);
         }
     }
 } 
