@@ -2,7 +2,6 @@
 
 #include <SFML/Graphics.hpp>
 
-// Forward declarations
 enum class GemType;
 class Gem;
 class Grid;

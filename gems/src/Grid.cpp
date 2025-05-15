@@ -23,7 +23,6 @@ void Grid::swapGems(const sf::Vector2i& pos1, const sf::Vector2i& pos2) {
     if (!isValidPosition(pos1) || !isValidPosition(pos2)) return;
     std::swap(gems[pos1.x][pos1.y], gems[pos2.x][pos2.y]);
     
-    // Обновляем позиции после обмена
     if (gems[pos1.x][pos1.y]) {
         sf::Vector2f newPos(
             pos1.x * Gem::TOTAL_SIZE + Gem::PADDING,
@@ -65,14 +64,12 @@ void Grid::dropGems() {
     for (int x = 0; x < width; ++x) {
         for (int y = height - 1; y >= 0; --y) {
             if (!gems[x][y]) {
-                // Find the first non-empty gem above
                 int sourceY = y - 1;
                 while (sourceY >= 0 && !gems[x][sourceY]) {
                     --sourceY;
                 }
                 
                 if (sourceY >= 0) {
-                    // Move the gem down
                     gems[x][y] = std::move(gems[x][sourceY]);
                     if (gems[x][y]) {
                         sf::Vector2f newPos(
@@ -90,11 +87,9 @@ void Grid::dropGems() {
 bool Grid::isAdjacent(const sf::Vector2i& pos1, const sf::Vector2i& pos2) const {
     if (!isValidPosition(pos1) || !isValidPosition(pos2)) return false;
     
-    // Проверяем, что гемы находятся на расстоянии 1 клетки друг от друга
     int dx = std::abs(pos1.x - pos2.x);
     int dy = std::abs(pos1.y - pos2.y);
     
-    // Гемы соседние, если они находятся на расстоянии 1 по горизонтали или вертикали
     return (dx == 1 && dy == 0) || (dx == 0 && dy == 1);
 }
 
@@ -147,50 +142,100 @@ bool Grid::checkHorizontalMatches(int row, int col) {
     if (col + 2 >= width) return false;
     
     Gem* gem1 = gems[col][row].get();
-    Gem* gem2 = gems[col + 1][row].get();
-    Gem* gem3 = gems[col + 2][row].get();
+    if (!gem1) return false;
     
-    return gem1 && gem2 && gem3 &&
-           gem1->getType() == gem2->getType() &&
-           gem2->getType() == gem3->getType();
+    GemType type = gem1->getType();
+    int matchLength = 1;
+    
+    // Проверяем вправо
+    for (int i = col + 1; i < width; ++i) {
+        if (gems[i][row] && gems[i][row]->getType() == type) {
+            matchLength++;
+        } else {
+            break;
+        }
+    }
+    
+    return matchLength >= 3;
 }
 
 bool Grid::checkVerticalMatches(int row, int col) {
     if (row + 2 >= height) return false;
     
     Gem* gem1 = gems[col][row].get();
-    Gem* gem2 = gems[col][row + 1].get();
-    Gem* gem3 = gems[col][row + 2].get();
+    if (!gem1) return false;
     
-    return gem1 && gem2 && gem3 &&
-           gem1->getType() == gem2->getType() &&
-           gem2->getType() == gem3->getType();
+    GemType type = gem1->getType();
+    int matchLength = 1;
+    
+    // Проверяем вниз
+    for (int i = row + 1; i < height; ++i) {
+        if (gems[col][i] && gems[col][i]->getType() == type) {
+            matchLength++;
+        } else {
+            break;
+        }
+    }
+    
+    return matchLength >= 3;
 }
 
 void Grid::removeHorizontalMatches(int row, int col) {
-    if (checkHorizontalMatches(row, col)) {
-        for (int i = 0; i < 3; ++i) {
-            if (gems[col + i][row]) {
-                if (gems[col + i][row]->hasBonus()) {
-                    gems[col + i][row]->activateBonus(*gems[col + i][row], *this);
-                }
-                gems[col + i][row]->startDisappearing();
-                gems[col + i][row].reset();
+    if (!checkHorizontalMatches(row, col)) return;
+    
+    Gem* gem1 = gems[col][row].get();
+    if (!gem1) return;
+    
+    GemType type = gem1->getType();
+    int matchLength = 1;
+    
+    // Находим длину последовательности
+    for (int i = col + 1; i < width; ++i) {
+        if (gems[i][row] && gems[i][row]->getType() == type) {
+            matchLength++;
+        } else {
+            break;
+        }
+    }
+    
+    // Удаляем все гемы в последовательности
+    for (int i = 0; i < matchLength; ++i) {
+        if (gems[col + i][row]) {
+            if (gems[col + i][row]->hasBonus()) {
+                gems[col + i][row]->activateBonus(*gems[col + i][row], *this);
             }
+            gems[col + i][row]->startDisappearing();
+            gems[col + i][row].reset();
         }
     }
 }
 
 void Grid::removeVerticalMatches(int row, int col) {
-    if (checkVerticalMatches(row, col)) {
-        for (int i = 0; i < 3; ++i) {
-            if (gems[col][row + i]) {
-                if (gems[col][row + i]->hasBonus()) {
-                    gems[col][row + i]->activateBonus(*gems[col][row + i], *this);
-                }
-                gems[col][row + i]->startDisappearing();
-                gems[col][row + i].reset();
+    if (!checkVerticalMatches(row, col)) return;
+    
+    Gem* gem1 = gems[col][row].get();
+    if (!gem1) return;
+    
+    GemType type = gem1->getType();
+    int matchLength = 1;
+    
+    // Находим длину последовательности
+    for (int i = row + 1; i < height; ++i) {
+        if (gems[col][i] && gems[col][i]->getType() == type) {
+            matchLength++;
+        } else {
+            break;
+        }
+    }
+    
+    // Удаляем все гемы в последовательности
+    for (int i = 0; i < matchLength; ++i) {
+        if (gems[col][row + i]) {
+            if (gems[col][row + i]->hasBonus()) {
+                gems[col][row + i]->activateBonus(*gems[col][row + i], *this);
             }
+            gems[col][row + i]->startDisappearing();
+            gems[col][row + i].reset();
         }
     }
 } 
