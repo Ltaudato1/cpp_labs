@@ -34,8 +34,3 @@ target_compile_options(gems PRIVATE
     -I/usr/include
     ${SFML_CFLAGS_OTHER}
 )
-
-# If you need SDL2_image or SDL2_ttf, add:
-# pkg_search_module(SDL2_IMAGE REQUIRED SDL2_image)
-# target_include_directories(gems PRIVATE ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS}/..)
-# target_link_libraries(gems PRIVATE ${SDL2_IMAGE_LIBRARIES})
