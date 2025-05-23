@@ -7,9 +7,16 @@ class Bonus : public GameObject {
 protected:
     float fallSpeed;
     bool isActive;
+    sf::RectangleShape *shape;
 
 public:
-    Bonus(const sf::Vector2f& pos, const sf::Vector2f& size);
+    Bonus(const sf::Vector2f& pos, const sf::Vector2f& size)
+        : GameObject(pos, size), fallSpeed(200.0f), isActive(true) {
+        shape = new sf::RectangleShape(size);
+        shape->setFillColor(sf::Color::Yellow);
+        shape->setPosition(pos);
+    }
+
     virtual ~Bonus() = default;
     
     void update(float deltaTime) override;
@@ -17,4 +24,6 @@ public:
     
     bool isBonusActive() const { return isActive; }
     void setActive(bool active) { isActive = active; }
+
+    void draw(sf::RenderWindow& window) { window.draw(*shape); } 
 }; 
