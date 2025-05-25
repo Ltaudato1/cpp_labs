@@ -8,22 +8,19 @@ private:
     float maxWidth;
     bool isBottom;
     sf::RectangleShape *shape;
-
+    sf::RectangleShape *bottomShape;
 public:
-    Paddle(const sf::Vector2f& pos, const sf::Vector2f& size, float speed, bool bottom)
-        : GameObject(pos, size)
-        , moveSpeed(speed)
-        , minWidth(size.x * 0.5f)
-        , maxWidth(size.x * 2.0f)
-        , isBottom(bottom) {
-        
-        shape = new sf::RectangleShape(size);
-        shape->setFillColor(sf::Color::Green);
-    }
+    Paddle(const sf::Vector2f& pos, const sf::Vector2f& size, float speed, bool bottom);
     
-    void update(float deltaTime) override { shape->setPosition(position); }
-    void move(float direction);
-    void resize(float factor);
+    void update(float deltaTime) override { 
+        shape->setPosition(position);
+    }
+
+    void move(float direction) {
+        position.x += direction * moveSpeed;
+        shape->setPosition(position);
+    }
+
     
     float getMoveSpeed() const { return moveSpeed; }
     void setMoveSpeed(float speed) { moveSpeed = speed; }
@@ -31,6 +28,22 @@ public:
     bool isBottomPaddle() const { return isBottom; }
     void setBottom(bool bottom) { isBottom = bottom; }
 
-    void draw(sf::RenderWindow& window) override { window.draw(*shape); }
+    void draw(sf::RenderWindow& window) override { 
+        window.draw(*shape);
+        if (isBottom) {
+            window.draw(*bottomShape);
+        }
+    }
 
+
+    void setPosition(const sf::Vector2f& pos) override {
+        position = pos;
+        shape->setPosition(pos);
+    }
+
+    sf::FloatRect getBounds() const {
+        return shape->getGlobalBounds();
+    }
+
+    void resize(float factor);
 }; 
